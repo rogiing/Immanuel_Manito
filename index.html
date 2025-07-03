@@ -43,20 +43,22 @@
         }
         label {
             display: block;
-            margin-bottom: 15px;
+            margin-bottom: 10px; /* 비밀번호 입력란 위로 조절 */
             font-size: 1.2em;
             color: #555;
             font-weight: 600;
         }
-        select {
+        select, input[type="password"] {
             width: 100%;
             padding: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 20px; /* 버튼 위로 조절 */
             border: 1px solid #ccc;
             border-radius: 6px;
             font-size: 1.1em;
             background-color: #f9f9f9;
             box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+        }
+        select {
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
@@ -155,41 +157,12 @@
             <label for="memberName">팀원 선택:</label>
             <select id="memberName">
                 <option value="">이름을 선택해주세요</option>
-                <option value="김세록">김세록</option>
-                <option value="전준형">전준형</option>
-                <option value="유병우">유병우</option>
-                <option value="김기경">김기경</option>
-                <option value="유준범">유준범</option>
-                <option value="정헌">정헌</option>
-                <option value="전병훈">전병훈</option>
-                <option value="최지현">최지현</option>
-                <option value="허다은">허다은</option>
-                <option value="조재은">조재은</option>
-                <option value="이우진">이우진</option>
-                <option value="권민지">권민지</option>
-                <option value="김지용">김지용</option>
-                <option value="김민상">김민상</option>
-                <option value="박동연">박동연</option>
-                <option value="박상민">박상민</option>
-                <option value="최하은">최하은</option>
-                <option value="김민교">김민교</option>
-                <option value="이단비">이단비</option>
-                <option value="이하은">이하은</option>
-                <option value="장현숙">장현숙</option>
-                <option value="유성길">유성길</option>
-                <option value="김예빈">김예빈</option>
-                <option value="박주언">박주언</option>
-                <option value="곽해리나">곽해리나</option>
-                <option value="김기현">김기현</option>
-                <option value="장서연">장서연</option>
-                <option value="김이지">김이지</option>
-                <option value="김재빈">김재빈</option>
-                <option value="함이현">함이현</option>
-                <option value="박재민">박재민</option>
-                <option value="이유림">이유림</option>
-                <option value="최대규 목사님">최대규 목사님</option>
-            </select>
-            <button id="drawButton">마니또 추첨</button>
+                </select>
+
+            <label for="memberPassword" id="passwordLabel" style="display: none;">비밀번호 (4자리):</label>
+            <input type="password" id="memberPassword" maxlength="4" placeholder="비밀번호 4자리" style="display: none;">
+            
+            <button id="authAndDrawButton">확인 및 마니또 추첨</button>
             <p id="result">당신의 마니또는 <span id="manitoName"></span> 입니다!</p>
             <p id="message"></p>
         </div>
@@ -209,22 +182,36 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         const members = [
-            "김세록", "전준형", "유병우", "김기경", "유준범", "정헌", "전병훈", 
+            "최대규 목사님", "김세록", "전준형", "유병우", "김기경", "유준범", "정헌", "전병훈", 
             "최지현", "허다은", "조재은", "이우진", "권민지", "김지용", "김민상", 
             "박동연", "박상민", "최하은", "김민교", "이단비", "이하은", "장현숙", 
             "유성길", "김예빈", "박주언", "곽해리나", "김기현", "장서연", "김이지", 
-            "김재빈", "함이현", "박재민", "이유림", "최대규 목사님" 
+            "김재빈", "함이현", "박재민", "이유림"
         ];
-        // 로컬 스토리지에서 기존 데이터 불러오기
+
+        // 각 팀원에게 부여할 4자리 비밀번호 (예시: 임의의 숫자 4자리)
+        // 실제 사용 시에는 이 부분을 잘 관리하셔야 합니다.
+        // 이 예시 코드에서는 단순성을 위해 난수 기반으로 비밀번호를 생성합니다.
+        // 실제 배포 시에는 미리 정해둔 비밀번호를 여기에 직접 입력하거나,
+        // 서버에서 안전하게 관리하는 방법을 고려해야 합니다.
+        const memberPasswords = JSON.parse(localStorage.getItem('memberPasswords')) || {};
+        
+        // 비밀번호가 없는 멤버에게만 생성
+        members.forEach(member => {
+            if (!memberPasswords[member]) {
+                memberPasswords[member] = Math.floor(1000 + Math.random() * 9000).toString(); // 1000~9999 사이 4자리 숫자
+            }
+        });
+        localStorage.setItem('memberPasswords', JSON.stringify(memberPasswords)); // 생성된 비밀번호 저장
+
         const assignedManitos = JSON.parse(localStorage.getItem('assignedManitos')) || {};
-        const drawnMembers = JSON.parse(localStorage.getItem('drawnMembers')) || {}; 
+        const drawnMembers = JSON.parse(localStorage.getItem('drawnMembers')) || {}; // 한 번 추첨한 사람 기록
         const ADMIN_PASSWORD = "21236688";
 
-        // 현재 접속한 사용자가 선택한 이름 (브라우저별로 고정)
-        let currentUser = localStorage.getItem('currentUserManitoDrawer');
-
         const memberSelect = document.getElementById('memberName');
-        const drawButton = document.getElementById('drawButton');
+        const memberPasswordInput = document.getElementById('memberPassword');
+        const passwordLabel = document.getElementById('passwordLabel');
+        const authAndDrawButton = document.getElementById('authAndDrawButton');
         const resultDisplay = document.getElementById('result');
         const manitoNameSpan = document.getElementById('manitoName');
         const messageDisplay = document.getElementById('message');
@@ -235,113 +222,139 @@
         const downloadXlsxButton = document.getElementById('downloadXlsxButton');
         const resetButton = document.getElementById('resetButton');
 
-        // 드롭다운 옵션 초기화 및 현재 사용자 이름 설정
-        function initializeMemberSelection() {
-            // 모든 옵션 제거 후 새로 추가 (혹시 모를 중복 방지)
-            memberSelect.innerHTML = '<option value="">이름을 선택해주세요</option>';
+        let currentAuthenticatedMember = null; // 현재 인증된 사용자
 
+        // 드롭다운 옵션 초기화 (명단 추가)
+        function populateMemberSelect() {
+            memberSelect.innerHTML = '<option value="">이름을 선택해주세요</option>';
             members.forEach(member => {
                 const option = document.createElement('option');
                 option.value = member;
                 option.textContent = member;
-                
-                // 이미 추첨을 완료한 사람은 드롭다운에서 비활성화 (선택 불가능)
-                if (drawnMembers[member]) {
-                    option.disabled = true;
-                    option.style.backgroundColor = '#f0f0f0';
-                    option.style.color = '#999';
-                }
-                
                 memberSelect.appendChild(option);
             });
+        }
 
-            if (currentUser) {
-                // 이미 선택된 사용자가 있다면 해당 이름을 고정하고 드롭다운 비활성화
-                memberSelect.value = currentUser;
-                memberSelect.disabled = true; 
-                messageDisplay.textContent = `${currentUser}님, 환영합니다! 마니또를 추첨하거나 결과를 확인하세요.`;
-                messageDisplay.style.color = '#3498db';
+        // UI 상태 업데이트
+        function updateUIState() {
+            const selectedMember = memberSelect.value;
+            resultDisplay.style.display = 'none'; // 결과는 기본적으로 숨김
+            authAndDrawButton.disabled = true; // 버튼 기본 비활성화
 
-                // 이미 마니또를 추첨했다면 결과 표시 및 추첨 버튼 비활성화
-                if (assignedManitos[currentUser]) {
-                    manitoNameSpan.textContent = assignedManitos[currentUser];
-                    resultDisplay.style.display = 'block';
-                    drawButton.disabled = true; 
-                    messageDisplay.textContent = `${currentUser}님, 이미 추첨하셨습니다. 당신의 마니또는 ${assignedManitos[currentUser]} 입니다!`;
-                    messageDisplay.style.color = '#28a745';
-                } else if (drawnMembers[currentUser]) {
-                     // 추첨은 했지만 결과가 화면에 숨겨져 있는 경우 (재접속)
-                    drawButton.disabled = false; // 다시 누르면 결과 볼 수 있도록 활성화
-                    messageDisplay.textContent = `${currentUser}님, 이미 추첨하셨습니다. 결과를 다시 보려면 '마니또 추첨' 버튼을 눌러주세요.`;
-                    messageDisplay.style.color = '#28a745';
-                } else {
-                    // 사용자 고정 후 아직 추첨하지 않은 경우
-                    drawButton.disabled = false;
-                }
-
-            } else {
-                // 첫 접속이거나 초기화된 경우: 이름을 선택하기 전까지 추첨 버튼 비활성화
+            if (!selectedMember) {
                 messageDisplay.textContent = '먼저 드롭다운에서 자신의 이름을 선택해주세요.';
                 messageDisplay.style.color = '#555';
-                memberSelect.disabled = false; // 처음에는 드롭다운 활성화
-                drawButton.disabled = true; 
+                passwordLabel.style.display = 'none';
+                memberPasswordInput.style.display = 'none';
+                memberPasswordInput.value = '';
+                currentAuthenticatedMember = null;
+                return;
+            }
+
+            passwordLabel.style.display = 'block';
+            memberPasswordInput.style.display = 'block';
+            memberPasswordInput.value = ''; // 이름 변경 시 비밀번호 초기화
+
+            if (currentAuthenticatedMember === selectedMember) {
+                // 이미 인증된 사용자라면
+                memberSelect.disabled = true; // 이름 선택 고정
+                memberPasswordInput.disabled = true; // 비밀번호 입력창 비활성화
+
+                if (drawnMembers[selectedMember]) {
+                    // 이미 추첨했다면 결과 표시
+                    manitoNameSpan.textContent = assignedManitos[selectedMember];
+                    resultDisplay.style.display = 'block';
+                    messageDisplay.textContent = `${selectedMember}님, 이미 추첨하셨습니다. 당신의 마니또는 ${assignedManitos[selectedMember]} 입니다!`;
+                    messageDisplay.style.color = '#28a745';
+                    authAndDrawButton.textContent = '결과 확인';
+                    authAndDrawButton.disabled = false;
+                } else {
+                    // 인증은 되었지만 아직 추첨하지 않았다면 추첨 버튼 활성화
+                    messageDisplay.textContent = `${selectedMember}님, 환영합니다! '마니또 추첨' 버튼을 눌러 마니또를 확인하세요.`;
+                    messageDisplay.style.color = '#3498db';
+                    authAndDrawButton.textContent = '마니또 추첨';
+                    authAndDrawButton.disabled = false;
+                }
+            } else {
+                // 이름은 선택했지만 아직 인증되지 않은 상태
+                memberSelect.disabled = false; // 이름 다시 선택 가능
+                memberPasswordInput.disabled = false; // 비밀번호 입력 활성화
+                messageDisplay.textContent = `${selectedMember}님, 비밀번호를 입력하여 본인 확인을 해주세요.`;
+                messageDisplay.style.color = '#555';
+                authAndDrawButton.textContent = '인증 및 추첨/확인';
+                authAndDrawButton.disabled = true; // 비밀번호 입력 전까지 비활성화
             }
         }
 
-        // 페이지 로드 시 초기화 함수 실행
-        document.addEventListener('DOMContentLoaded', initializeMemberSelection);
+        // 페이지 로드 시
+        document.addEventListener('DOMContentLoaded', () => {
+            populateMemberSelect();
+            updateUIState(); // 초기 UI 상태 설정
+        });
 
-        // 이름 선택 시 동작 (사용자 고정 로직)
-        memberSelect.addEventListener('change', () => {
-            const selected = memberSelect.value;
-            if (selected && !currentUser) { // 이름이 선택되었고 아직 사용자가 고정되지 않았다면
-                currentUser = selected;
-                localStorage.setItem('currentUserManitoDrawer', currentUser); // 현재 사용자 이름 로컬 스토리지에 저장
-                memberSelect.disabled = true; // 드롭다운 자체를 비활성화하여 다른 이름 선택 방지
-                drawButton.disabled = false; // 추첨 버튼 활성화
-                messageDisplay.textContent = `${currentUser}님, 환영합니다! 이제 마니또를 추첨할 수 있습니다.`;
-                messageDisplay.style.color = '#3498db';
-                resultDisplay.style.display = 'none'; // 혹시 모를 이전 결과 숨김
-            } else if (!selected) { // '이름을 선택해주세요' 옵션을 다시 선택한 경우
-                drawButton.disabled = true;
-                resultDisplay.style.display = 'none';
-                messageDisplay.textContent = '이름을 선택해주세요.';
-                messageDisplay.style.color = '#555';
+        // 이름 선택 변경 시
+        memberSelect.addEventListener('change', updateUIState);
+
+        // 비밀번호 입력 시 (4자리 모두 입력되면 버튼 활성화)
+        memberPasswordInput.addEventListener('input', () => {
+            const selectedMember = memberSelect.value;
+            const enteredPassword = memberPasswordInput.value;
+            if (selectedMember && enteredPassword.length === 4) {
+                authAndDrawButton.disabled = false;
+            } else {
+                authAndDrawButton.disabled = true;
             }
         });
 
-        // 마니또 추첨 버튼 클릭 시 동작
-        drawButton.addEventListener('click', () => {
-            const selectedMember = currentUser; // 현재 고정된 사용자 이름으로 추첨 진행
+        // 인증 및 추첨 버튼 클릭 시
+        authAndDrawButton.addEventListener('click', () => {
+            const selectedMember = memberSelect.value;
+            const enteredPassword = memberPasswordInput.value;
 
             if (!selectedMember) {
-                messageDisplay.textContent = '먼저 이름을 선택해주세요!';
+                messageDisplay.textContent = '이름을 선택해주세요!';
                 messageDisplay.style.color = '#e74c3c';
-                resultDisplay.style.display = 'none';
                 return;
             }
 
+            // 본인 인증 처리
+            if (memberPasswords[selectedMember] !== enteredPassword) {
+                messageDisplay.textContent = '비밀번호가 올바르지 않습니다. 다시 입력해주세요.';
+                messageDisplay.style.color = '#e74c3c';
+                memberPasswordInput.value = ''; // 비밀번호 초기화
+                return;
+            }
+
+            // 인증 성공!
+            currentAuthenticatedMember = selectedMember;
+            memberSelect.disabled = true; // 이름 선택 고정
+            memberPasswordInput.disabled = true; // 비밀번호 입력 비활성화
+            messageDisplay.textContent = `${selectedMember}님, 인증되었습니다.`;
+            messageDisplay.style.color = '#28a745';
+            
+            // 이미 추첨된 경우 결과 표시
             if (drawnMembers[selectedMember]) {
-                // 이미 추첨한 경우, 저장된 마니또를 다시 보여줌
                 manitoNameSpan.textContent = assignedManitos[selectedMember];
                 resultDisplay.style.display = 'block';
-                messageDisplay.textContent = `당신은 이미 마니또를 추첨하셨습니다. 당신의 마니또는 ${assignedManitos[selectedMember]} 입니다!`;
+                messageDisplay.textContent = `${selectedMember}님, 이미 추첨하셨습니다. 당신의 마니또는 ${assignedManitos[selectedMember]} 입니다!`;
                 messageDisplay.style.color = '#28a745';
-                drawButton.disabled = true; // 다시 추첨 못하도록 버튼 비활성화
+                authAndDrawButton.textContent = '결과 확인'; // 버튼 텍스트 변경
+                authAndDrawButton.disabled = true; // 결과 보여줬으니 비활성화 (한번만 보여주므로)
                 return;
             }
 
-            // 마니또 배정 로직: 자신을 제외하고, 아직 누구에게도 배정되지 않은 사람 중에서 선택
+            // 마니또 추첨 로직
             let availableManitos = members.filter(m => 
                 m !== selectedMember && 
                 !Object.values(assignedManitos).includes(m) 
             );
             
-            // 모든 사람이 마니또를 받을 수 있도록 예외 처리:
-            // 만약 자신을 제외한 모두가 이미 다른 사람의 마니또로 배정된 경우,
-            // 자신을 제외한 모든 팀원 중에서 재할당 (순환 참조 방지 및 전원 배정 목적)
+            // 모든 사람이 마니또를 받을 수 있도록 예외 처리 (재할당 로직)
             if (availableManitos.length === 0) {
-                availableManitos = members.filter(m => m !== selectedMember);
+                 // 자신을 제외한 모든 팀원이 이미 다른 사람의 마니또로 배정된 경우,
+                 // 아직 마니또를 배정받지 못한 팀원이 있다면, 그 팀원을 마니또로 선택할 수 있도록 로직 보완
+                 // (이 로직은 모든 사람이 마니또를 받을 수 있도록 최후의 수단으로 작동)
+                availableManitos = members.filter(m => m !== selectedMember); 
             }
             
             if (availableManitos.length === 0) {
@@ -351,28 +364,27 @@
                 return;
             }
 
-            // 무작위로 마니또 선택
             const randomIndex = Math.floor(Math.random() * availableManitos.length);
             const chosenManito = availableManitos[randomIndex];
 
             // 결과 저장
             assignedManitos[selectedMember] = chosenManito;
-            drawnMembers[selectedMember] = true; 
+            drawnMembers[selectedMember] = true; // 추첨 완료 표시
 
             localStorage.setItem('assignedManitos', JSON.stringify(assignedManitos));
             localStorage.setItem('drawnMembers', JSON.stringify(drawnMembers));
 
-            // 결과 화면에 표시 및 메시지 업데이트
+            // 결과 화면에 표시
             manitoNameSpan.textContent = chosenManito;
             resultDisplay.style.display = 'block';
-            messageDisplay.textContent = '추첨이 완료되었습니다! 결과를 확인해주세요.';
+            messageDisplay.textContent = `추첨이 완료되었습니다! ${selectedMember}님의 마니또는 ${chosenManito} 입니다! 결과는 위를 확인해주세요.`;
             messageDisplay.style.color = '#28a745';
             
-            // 추첨 후 버튼 비활성화 (한 번만 추첨 가능)
-            drawButton.disabled = true; 
+            authAndDrawButton.disabled = true; // 추첨 후 버튼 비활성화 (1회만 추첨 가능)
+            authAndDrawButton.textContent = '추첨 완료';
         });
 
-        // 관리자 전용 기능 (비밀번호 확인)
+        // 관리자 섹션 비밀번호 확인
         showAdminOptionsButton.addEventListener('click', () => {
             if (adminPasswordInput.value === ADMIN_PASSWORD) {
                 adminOptionsDiv.style.display = 'block';
@@ -388,14 +400,20 @@
         // 결과 다운로드 (TXT)
         downloadTxtButton.addEventListener('click', () => {
             let content = "❤️임마누엘교회 마니또❤️ 추첨 결과\n\n";
+            content += "===== 마니또 배정 결과 =====\n";
             for (const member in assignedManitos) {
                 content += `${member}: ${assignedManitos[member]}\n`;
             }
+            content += "\n===== 팀원별 비밀번호 (디렉터 전용) =====\n";
+            for (const member in memberPasswords) {
+                content += `${member}: ${memberPasswords[member]}\n`;
+            }
+            
             const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = '임마누엘교회_마니또_결과.txt';
+            a.download = '임마누엘교회_마니또_결과_및_비밀번호.txt';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -404,24 +422,31 @@
 
         // 결과 다운로드 (XLSX)
         downloadXlsxButton.addEventListener('click', () => {
-            const data = [["팀원", "마니또"]];
+            const data = [["팀원", "마니또"], ["", ""]]; // 빈 줄 추가
             for (const member in assignedManitos) {
                 data.push([member, assignedManitos[member]]);
+            }
+
+            data.push(["", ""]); // 구분선
+            data.push(["팀원", "비밀번호"]); // 비밀번호 헤더
+            for (const member in memberPasswords) {
+                data.push([member, memberPasswords[member]]);
             }
 
             const ws = XLSX.utils.aoa_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "마니또 결과");
-            XLSX.writeFile(wb, "임마누엘교회_마니또_결과.xlsx");
+            XLSX.writeFile(wb, "임마누엘교회_마니또_결과_및_비밀번호.xlsx");
         });
 
         // 모든 기록 초기화
         resetButton.addEventListener('click', () => {
-            if (confirm('모든 추첨 기록을 정말로 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+            if (confirm('모든 추첨 기록과 비밀번호를 정말로 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
                 localStorage.removeItem('assignedManitos');
                 localStorage.removeItem('drawnMembers');
-                localStorage.removeItem('currentUserManitoDrawer'); // 현재 사용자 정보도 함께 초기화
-                window.location.reload(); // 페이지 새로고침하여 완전히 초기화된 상태로 만듦
+                localStorage.removeItem('memberPasswords'); // 비밀번호도 초기화
+                localStorage.removeItem('currentUserManitoDrawer'); // 현재 로그인 사용자 정보도 초기화
+                window.location.reload(); 
             }
         });
     </script>
