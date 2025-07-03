@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- saved from url=(0174)file:///C:/Users/kimsr/OneDrive/%EB%B0%94%ED%83%95%20%ED%99%94%EB%A9%B4/%EC%9E%84%EB%A7%88%EB%88%84%EC%97%98%20%EB%A7%88%EB%8B%88%EB%98%90%20%EC%B6%94%EC%B2%A8%EA%B8%B01.html -->
-<html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>❤️임마누엘교회 마니또❤️ 추첨기</title>
     <style>
@@ -155,7 +155,7 @@
             <label for="memberName">팀원 선택:</label>
             <select id="memberName">
                 <option value="">이름을 선택해주세요</option>
-                <option value="김세록" disabled="" style="background-color: rgb(240, 240, 240); color: rgb(153, 153, 153);">김세록</option>
+                <option value="김세록">김세록</option>
                 <option value="전준형">전준형</option>
                 <option value="유병우">유병우</option>
                 <option value="김기경">김기경</option>
@@ -187,6 +187,7 @@
                 <option value="함이현">함이현</option>
                 <option value="박재민">박재민</option>
                 <option value="이유림">이유림</option>
+                <option value="최대규 목사님">최대규 목사님</option>
             </select>
             <button id="drawButton">마니또 추첨</button>
             <p id="result">당신의 마니또는 <span id="manitoName"></span> 입니다!</p>
@@ -205,17 +206,17 @@
         </div>
     </div>
 
-    <script src="./❤️임마누엘교회 마니또❤️ 추첨기_files/xlsx.full.min.js.다운로드"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         const members = [
             "김세록", "전준형", "유병우", "김기경", "유준범", "정헌", "전병훈", 
             "최지현", "허다은", "조재은", "이우진", "권민지", "김지용", "김민상", 
             "박동연", "박상민", "최하은", "김민교", "이단비", "이하은", "장현숙", 
             "유성길", "김예빈", "박주언", "곽해리나", "김기현", "장서연", "김이지", 
-            "김재빈", "함이현", "박재민", "이유림"
+            "김재빈", "함이현", "박재민", "이유림", "최대규 목사님" // 최대규 목사님 추가
         ];
         const assignedManitos = JSON.parse(localStorage.getItem('assignedManitos')) || {};
-        const drawnMembers = JSON.parse(localStorage.getItem('drawnMembers')) || {}; // 한 번 추첨한 사람 기록
+        const drawnMembers = JSON.parse(localStorage.getItem('drawnMembers')) || {}; 
         const ADMIN_PASSWORD = "21236688";
 
         const memberSelect = document.getElementById('memberName');
@@ -230,7 +231,6 @@
         const downloadXlsxButton = document.getElementById('downloadXlsxButton');
         const resetButton = document.getElementById('resetButton');
 
-        // 이전에 추첨된 결과가 있다면 해당 사용자는 선택 불가하도록 설정
         function updateSelectOptions() {
             Array.from(memberSelect.options).forEach(option => {
                 if (option.value && drawnMembers[option.value]) {
@@ -245,7 +245,6 @@
             });
         }
 
-        // 페이지 로드 시 추첨 현황 업데이트
         document.addEventListener('DOMContentLoaded', updateSelectOptions);
 
         drawButton.addEventListener('click', () => {
@@ -267,14 +266,11 @@
 
             let availableManitos = members.filter(m => 
                 m !== selectedMember && 
-                !Object.values(assignedManitos).includes(m) // 다른 사람이 이미 마니또로 배정된 사람은 제외
+                !Object.values(assignedManitos).includes(m)
             );
 
-            // 모든 사람에게 마니또가 배정될 수 있도록 특별 처리 (선택 불가능한 마니또가 없는 경우)
-            // 즉, 마지막 한두 명 남았을 때 무한루프에 빠지거나 배정이 안 되는 경우 방지
+            // 모든 사람에게 마니또가 배정될 수 있도록 특별 처리
             if (availableManitos.length === 0) {
-                // 자신을 제외한 모든 팀원이 이미 다른 사람의 마니또로 배정된 경우,
-                // 이미 배정된 마니또 중에서 재할당 (원래 의도와 조금 다를 수 있지만, 모든 사람이 배정받기 위함)
                 availableManitos = members.filter(m => m !== selectedMember);
             }
             
@@ -289,7 +285,7 @@
             const chosenManito = availableManitos[randomIndex];
 
             assignedManitos[selectedMember] = chosenManito;
-            drawnMembers[selectedMember] = true; // 추첨 완료 표시
+            drawnMembers[selectedMember] = true;
 
             localStorage.setItem('assignedManitos', JSON.stringify(assignedManitos));
             localStorage.setItem('drawnMembers', JSON.stringify(drawnMembers));
@@ -299,7 +295,6 @@
             messageDisplay.textContent = '추첨이 완료되었습니다! 결과는 위를 확인해주세요.';
             messageDisplay.style.color = '#28a745';
             
-            // 추첨 후 해당 이름 선택 불가 처리
             updateSelectOptions();
         });
 
@@ -347,9 +342,9 @@
             if (confirm('모든 추첨 기록을 정말로 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
                 localStorage.removeItem('assignedManitos');
                 localStorage.removeItem('drawnMembers');
-                window.location.reload(); // 페이지 새로고침으로 초기화된 상태 반영
+                window.location.reload();
             }
         });
     </script>
-
-</body></html>
+</body>
+</html>
